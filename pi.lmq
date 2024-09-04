@@ -1,0 +1,152 @@
+using luminique::std::math as mt;
+using luminique::std::graphics;
+using luminique::std::chrono;
+using luminique::std::sys;
+
+const scale = 40;
+let collisions = 0;
+
+const l1 = 1.5; // Length of each cube
+const l2 = 2; // Length of each cube
+
+let window1 = graphics::Window("Kinematics", 1200, 800, false);
+window1.loadFont("Ubuntu-Regular.ttf", 32);
+
+class Cube {
+  function __init__(window, x, y, vx, size, mass) {
+    this.window = window;
+    this.x = x;
+    this.y = y;
+    this.size = size;
+    this.vx = vx * scale;
+    this.mass = mass;
+  }
+
+  function draw() {
+    this.window.setDrawColor(158, 41, 72, 255);
+    this.window.fillPolygon([
+      [int(this.window.width / 2 + this.x * scale - this.size * (scale / 2)), int(this.window.height - this.y * scale)],
+      [int(this.window.width / 2 + this.x * scale - this.size * (scale / 2)), int(this.window.height - this.y * scale - this.size * scale)],
+      [int(this.window.width / 2 + this.x * scale + this.size * (scale / 2)), int(this.window.height - this.y * scale - this.size * scale)],
+      [int(this.window.width / 2 + this.x * scale + this.size * (scale / 2)), int(this.window.height - this.y * scale)]
+    ]);
+  }
+
+  function updatePosition(deltaT) {
+    this.x = this.x + this.vx * deltaT;
+  }
+
+  function checkCollisionWithBorders() {
+    const leftBorder = -this.window.width / scale / 2; 
+    // const rightBorder = this.window.width / scale / 2;
+
+    if (this.x - this.size / 2 <= leftBorder /* || this.x + this.size / 2 >= rightBorder */) {
+      collisions++;
+      this.vx = -this.vx;
+    }
+  }
+
+  static addCubeOnFloor(window, x, vx, l, mass) {
+    let ambient = Ambient(window);
+    let cube = Cube(window, x, ambient.terrainHeight / scale, vx, l, mass);
+    cube.draw();
+    return cube;
+  }
+
+  function checkCollisionWithCube(other) {
+    if (mt::fabs(this.x - other.x) < (this.size + other.size) / 2) {
+      collisions++;
+      let newVx1 = ((this.mass - other.mass) * this.vx + 2 * other.mass * other.vx) / (this.mass + other.mass);
+      let newVx2 = ((other.mass - this.mass) * other.vx + 2 * this.mass * this.vx) / (this.mass + other.mass);
+
+      this.vx = newVx1;
+      other.vx = newVx2;
+    }
+  }
+}
+
+class Ambient {
+  function __init__(window) {
+    this.window = window;
+    this.terrainHeight = this.window.height / 6;
+  }
+
+  function draw() {
+    this.window.setDrawColor(255, 255, 255, 255);
+    this.window.clear();
+
+    this.window.setDrawColor(0, 255, 0, 255);
+    this.window.fillPolygon([
+       [0, this.window.height],
+       [this.window.width, this.window.height],
+       [this.window.width, int(this.window.height - this.terrainHeight)],
+       [0, int(this.window.height - this.terrainHeight)]
+    ]); 
+  }
+}
+
+function simulateCubeMotion(window, cube1, cube2) {
+  const deltaT = 0.000001;
+  const stepsPerFrame = 500; // Number of physics steps to simulate per frame
+
+  while (true) {
+    for (let i = 0; i < stepsPerFrame; i = i + 1) {
+      cube1.updatePosition(deltaT);
+      cube2.updatePosition(deltaT);
+      cube1.checkCollisionWithBorders();
+      cube2.checkCollisionWithBorders();
+
+      cube1.checkCollisionWithCube(cube2);
+    }
+
+    let ambient = Ambient(window);
+    ambient.draw();
+
+    cube1.draw();
+    cube2.draw();
+
+    window.drawText("Collisions: ${collisions} -> ${mt::pi}", 50, 100, [0, 0, 0], graphics::AlignDirection::RIGHT, graphics::AlignDirection::MIDDLE);
+
+    window.present();
+
+    let e;
+    let quit = false;
+    while ((e = window.pollEvent()) != nil && !quit) {
+      switch (e.type) {
+        case graphics::EventType::QUIT: {
+          quit = true;
+          sys::exit(70);
+        }
+      }
+    }
+
+  }
+}
+
+
+window1.show();
+
+let cube1 = Cube.addCubeOnFloor(window1, -8, 0, l1, 1); // Mass 1
+let cube2 = Cube.addCubeOnFloor(window1, 0, -0.1, l2, 100**5); // Mass 100
+
+simulateCubeMotion(window1, cube1, cube2);
+
+function handleEvents() {
+  let quit = false;
+  while (!quit) {
+    let e;
+    while ((e = window1.pollEvent()) != nil && !quit) {
+      switch (e.type) {
+        case graphics::EventType::QUIT: {
+          quit = true;
+          sys::exit(70);
+        }
+      }
+    }
+  }
+}
+
+handleEvents();
+
+window1.hide();
+window1.close();
