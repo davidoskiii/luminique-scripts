@@ -1,0 +1,122 @@
+using luminique::std::graphics;
+using luminique::std::math as mt;
+using luminique::std::chrono;
+using luminique::std::sys;
+
+const L = 2.0;          // Length of the rod
+const T = 100;          // Total time to simulate
+const ALPHA = 0.01;     // Thermal diffusivity
+const NX = 50;          // Number of spatial steps
+const NT = 1000;        // Number of time steps
+
+let speed = 100;
+
+function stepArray(start, end, step) {
+  let arr = [];
+  for (let i = start; i < end + step; i = i + step) {
+    arr.append(i);
+  }
+  return arr;
+}
+
+function initTemperature(nx) {
+  let u = [];
+  for (let i = 0; i < nx; i++) {
+    if (i > nx/4 && i < 3*nx/4) {
+      u.append(100.0);  // Initial high temperature in the middle
+    } else {
+      u.append(0.0);    // Initial low temperature elsewhere
+    }
+  }
+  return u;
+}
+
+function temperatureToColor(temp) {
+  let maxTemp = 100.0;
+  let normalized = temp / maxTemp;
+  let red = int(normalized * 255);
+  let blue = int((1.0 - normalized) * 255);
+  return [red, 0, blue];
+}
+
+function drawTemperatureDistribution(u) {
+  let rodHeight = 100;
+  let segmentWidth = window1.width / NX;
+
+  window1.setDrawColor(0, 0, 0, 255);
+  window1.clear();
+
+  for (let i = 0; i < u.length; i++) {
+    let color = temperatureToColor(u[i]);
+    window1.setDrawColor(color[0], color[1], color[2], 255);
+    window1.fillRect(
+      int(i * segmentWidth),
+      int(window1.height / 2 - rodHeight / 2),
+      int(segmentWidth),
+      rodHeight
+    );
+  }
+
+  window1.present();
+}
+
+function simulateAndAnimateHeatEquation(u, nx, nt, alpha, dx, dt) {
+  for (let n = 0; n < nt; n++) {
+    let e;
+    let quit = false;
+    while ((e = window1.pollEvent()) != nil && !quit) {
+      switch (e.type) {
+        case graphics::EventType::QUIT: {
+          quit = true;
+          sys::exit(70);
+        }
+        case graphics::EventType::KEYDOWN: {
+          switch (e.keyCode) {
+            case graphics::KeyCodeType::UP: {
+              speed = speed + 10;
+              quit = true;
+            }
+          }
+        }
+      }
+    }
+    let u_new = u;
+    for (let i = 1; i < nx - 1; i++) {
+      u_new[i] = u[i] + alpha * (dt / (dx * dx)) * (u[i + 1] - 2 * u[i] + u[i - 1]);
+    }
+    u = u_new;
+    drawTemperatureDistribution(u);
+    chrono::sleep(speed);
+  }
+}
+
+// Main program
+
+const DX = L / (NX - 1);
+const DT = T / NT;
+
+let u = initTemperature(NX);
+
+let window1 = graphics::Window("Heat Distribution on a Rod", 1200, 400, false);
+window1.show();
+
+simulateAndAnimateHeatEquation(u, NX, NT, ALPHA, DX, DT);
+
+function handleEvents() {
+  let quit = false;
+  while (!quit) {
+    let e;
+    while ((e = window1.pollEvent()) != nil && !quit) {
+      switch (e.type) {
+        case graphics::EventType::QUIT: {
+          quit = true;
+        }
+      }
+    }
+  }
+}
+
+handleEvents();
+
+window1.hide();
+window1.close();

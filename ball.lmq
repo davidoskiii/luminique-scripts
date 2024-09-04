@@ -1,0 +1,123 @@
+using luminique::std::math as mt;
+using luminique::std::graphics;
+using luminique::std::chrono;
+using luminique::std::sys;
+
+const g = 9.81;
+const r = 1;
+const X_0 = 0;
+const Y_0 = 10;
+const X_DOT_0 = -20;
+const Y_DOT_0 = 2;
+
+const mew = 0.8;
+const e = 0.7;
+
+let window1 = graphics::Window("Kinematics", 1200, 800, false);
+
+function stepArray(start, end, step) {
+  let arr = [];
+
+  for (let i = start; i < end + step; i = i + step) {
+    arr.append(i);
+  }
+
+  return arr;
+}
+
+function calculateFallTime(height, velocity) {
+  if (height < 0) height = 0;
+  return (-velocity + mt::sqrt(velocity**2 + 2 * g * height)) / g;
+}
+
+function drawBallOnPosition(horizontalPos, verticalPos) {
+  window1.setDrawColor(255, 255, 255, 255);
+  window1.clear();
+
+  window1.setDrawColor(41, 158, 72, 255);
+  window1.fillCircle(int(window1.width / 2 + horizontalPos * 40), int(window1.height - r * 40 - verticalPos * 40), r * 40);
+
+  window1.present();
+}
+
+function applyAirResistance(velocity, coefficient, deltaT) {
+  return velocity * (1 - coefficient * deltaT);
+}
+
+function checkCollisionWithBorders(horizontalPosition, verticalPosition, horizontalVelocity, verticalVelocity) {
+  const k = 0.014; // error coefficient
+  if ((horizontalPosition - r - k) <= -window1.width / 80 || (horizontalPosition + r - k) >= window1.width / 80) {
+      horizontalVelocity = -horizontalVelocity * e;
+  }
+
+  if (verticalPosition <= 0 || verticalPosition >= (window1.height - 2 * (r * 40)) / 40) {
+    verticalVelocity = -verticalVelocity * e;
+  }
+
+  return [horizontalVelocity, verticalVelocity];
+}
+
+function simulateFallAndBounceWithAirResistance(initialHeight, initialVerticalVelocity, initialHorizontalVelocity) {
+  let verticalPosition = initialHeight;
+  let horizontalPosition = X_0;
+  let verticalVelocity = initialVerticalVelocity;
+  let horizontalVelocity = initialHorizontalVelocity;
+
+  const deltaT = 0.01;
+  const realTimePerFrame = deltaT * 1000;
+
+  while (true) {
+    let t = calculateFallTime(verticalPosition, verticalVelocity);
+
+    for (time : stepArray(0, t, deltaT)) {
+      verticalVelocity = applyAirResistance(verticalVelocity, mew, deltaT);
+      horizontalVelocity = applyAirResistance(horizontalVelocity, mew, deltaT);
+
+      verticalPosition = verticalPosition + verticalVelocity * deltaT;
+      horizontalPosition = horizontalPosition + horizontalVelocity * deltaT;
+      verticalVelocity = verticalVelocity - g * deltaT;
+
+      let velocities = checkCollisionWithBorders(horizontalPosition, verticalPosition, horizontalVelocity, verticalVelocity);
+      horizontalVelocity = velocities[0];
+      verticalVelocity = velocities[1];
+
+      drawBallOnPosition(horizontalPosition, verticalPosition);
+
+      let e;
+      let quit = false;
+      while ((e = window1.pollEvent()) != nil && !quit) {
+        switch (e.type) {
+          case graphics::EventType::QUIT: {
+            quit = true;
+            sys::exit(70);
+          }
+        }
+      }
+
+      chrono::sleep(int(realTimePerFrame));
+    }
+  }
+}
+
+window1.show();
+
+simulateFallAndBounceWithAirResistance(Y_0, Y_DOT_0, X_DOT_0);
+
+function handleEvents() {
+  let quit = false;
+  while (!quit) {
+    let e;
+    while ((e = window1.pollEvent()) != nil && !quit) {
+      switch (e.type) {
+        case graphics::EventType::QUIT: {
+          quit = true;
+        }
+      }
+    }
+  }
+}
+
+handleEvents();
+
+window1.hide();
+window1.close();

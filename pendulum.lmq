@@ -1,0 +1,119 @@
+using luminique::std::math as mt;
+using luminique::std::graphics;
+using luminique::std::chrono;
+using luminique::std::sys;
+
+const g = 9.81;
+const L = 2;
+const mu = 0.5;
+
+const THETA_0 = mt::rad(90);
+const THETA_DOT_0 = 0;
+
+let window1 = graphics::Window("Pendulum Animation", 800, 600, true);
+
+function stepArray(start, end, step) {
+  let arr = [];
+
+  for (let i = start; i < end + step; i = i + step) {
+    arr.append(i);
+  }
+
+  return arr;
+}
+
+function getThetaDoubleDot(theta, thetaDot) {
+  return -mu * thetaDot - (g / L) * mt::sin(theta);
+}
+
+function thetaAndThetaDot(t) {
+  let theta = THETA_0;
+  let thetaDot = THETA_DOT_0;
+
+  const deltaT = 0.01;
+  for (time : stepArray(0, t, deltaT)) {
+    let thetaDoubleDot = getThetaDoubleDot(theta, thetaDot);
+    theta = theta + thetaDot * deltaT;
+    thetaDot = thetaDot + thetaDoubleDot * deltaT;
+  }
+
+  return [theta, thetaDot];
+}
+
+function drawPendulum(theta) {
+  window1.setDrawColor(255, 255, 255, 255);
+  window1.clear();
+
+  let originX = window1.width / 2;
+  let originY = window1.height / 2 - 200;
+  let bobRadius = 20;
+
+  let bobX = originX + L * 200 * mt::sin(theta);
+  let bobY = originY + L * 200 * mt::cos(theta);
+
+  window1.setDrawColor(0, 0, 0, 255);
+  window1.drawLine(int(originX), int(originY), int(bobX), int(bobY));
+
+  window1.setDrawColor(0, 255, 0, 255);
+  window1.fillCircle(int(originX), int(originY), 2);
+
+  window1.setDrawColor(255, 0, 0, 255);
+  window1.fillCircle(int(bobX), int(bobY), bobRadius);
+
+  window1.present();
+}
+
+function simulatePendulumMotion() {
+  let res = thetaAndThetaDot(0);
+  let theta = res[0];
+  let thetaDot = res[1];
+
+  const deltaT = 0.01;
+  const realTimePerFrame = deltaT * 1000;
+
+  let threshold = 0.01;
+
+  while (mt::fabs(theta) > threshold || mt::fabs(thetaDot) > threshold) {
+    let thetaDoubleDot = getThetaDoubleDot(theta, thetaDot);
+    theta = theta + thetaDot * deltaT;
+    thetaDot = thetaDot + thetaDoubleDot * deltaT;
+
+    drawPendulum(theta);
+
+    let e;
+    let quit = false;
+    while ((e = window1.pollEvent()) != nil && !quit) {
+      switch (e.type) {
+        case graphics::EventType::QUIT: {
+          quit = true;
+          sys::exit(70);
+        }
+      }
+    }
+
+    chrono::sleep(int(realTimePerFrame));
+  }
+}
+
+window1.show();
+
+simulatePendulumMotion();
+
+function handleEvents() {
+  let quit = false;
+  while (!quit) {
+    let e;
+    while ((e = window1.pollEvent()) != nil && !quit) {
+      switch (e.type) {
+        case graphics::EventType::QUIT: {
+          quit = true;
+        }
+      }
+    }
+  }
+}
+
+handleEvents();
+
+window1.hide();
+window1.close();
