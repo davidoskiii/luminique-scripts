@@ -5,103 +5,120 @@ using luminique::std::sys;
 
 const g = 9.81;
 const r = 1;
-const X_0 = 0;
-const Y_0 = 10;
-const X_DOT_0 = -20;
-const Y_DOT_0 = 2;
 
 const mew = 0.8;
 const e = 0.7;
 
 let window1 = graphics::Window("Kinematics", 1200, 800, false);
 
-function stepArray(start, end, step) {
-  let arr = [];
+class Ball {
+  function __init__(x, y, vx, vy, radius) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
 
-  for (let i = start; i < end + step; i = i + step) {
-    arr.append(i);
+    this.radius = radius;
   }
 
-  return arr;
-}
-
-function calculateFallTime(height, velocity) {
-  if (height < 0) height = 0;
-  return (-velocity + mt::sqrt(velocity**2 + 2 * g * height)) / g;
-}
-
-function drawBallOnPosition(horizontalPos, verticalPos) {
-  window1.setDrawColor(255, 255, 255, 255);
-  window1.clear();
-
-  window1.setDrawColor(41, 158, 72, 255);
-  window1.fillCircle(int(window1.width / 2 + horizontalPos * 40), int(window1.height - r * 40 - verticalPos * 40), r * 40);
-
-  window1.present();
-}
-
-function applyAirResistance(velocity, coefficient, deltaT) {
-  return velocity * (1 - coefficient * deltaT);
-}
-
-function checkCollisionWithBorders(horizontalPosition, verticalPosition, horizontalVelocity, verticalVelocity) {
-  const k = 0.014; // error coefficient
-  if ((horizontalPosition - r - k) <= -window1.width / 80 || (horizontalPosition + r - k) >= window1.width / 80) {
-      horizontalVelocity = -horizontalVelocity * e;
+  function applyAirResistance(coefficient, deltaT) {
+    this.vx = this.vx * (1 - coefficient * deltaT);
+    this.vy = this.vy * (1 - coefficient * deltaT);
   }
 
-  if (verticalPosition <= 0 || verticalPosition >= (window1.height - 2 * (r * 40)) / 40) {
-    verticalVelocity = -verticalVelocity * e;
+  function move(deltaT) {
+    this.x = this.x + this.vx * deltaT;
+    this.y = this.y + this.vy * deltaT;
+    this.vy = this.vy - g * deltaT;
   }
 
-  return [horizontalVelocity, verticalVelocity];
+  function checkCollisionWithBorders() {
+    const k = 0.014; // error coefficient
+    if ((this.x - this.radius - k) <= -window1.width / 80 || (this.x + this.radius - k) >= window1.width / 80) {
+      this.vx = -this.vx * e;
+    }
+
+    if (this.y <= 0 || this.y >= (window1.height - 2 * (this.radius * 40)) / 40) {
+      this.vy = -this.vy * e;
+    }
+  }
+
+  function draw() {
+    window1.setDrawColor(41, 158, 72, 255);
+    window1.fillCircle(int(window1.width / 2 + this.x * 40), int(window1.height - this.radius * 40 - this.y * 40), this.radius * 40);
+  }
 }
 
-function simulateFallAndBounceWithAirResistance(initialHeight, initialVerticalVelocity, initialHorizontalVelocity) {
-  let verticalPosition = initialHeight;
-  let horizontalPosition = X_0;
-  let verticalVelocity = initialVerticalVelocity;
-  let horizontalVelocity = initialHorizontalVelocity;
+function checkBallCollision(ball1, ball2) {
+  let dist = mt::sqrt((ball1.x - ball2.x) ** 2 + (ball1.y - ball2.y) ** 2);
+  if (dist <= (ball1.radius + ball2.radius)) {
+    // Swap velocities for simplicity
+    let tempVx = ball1.vx;
+    let tempVy = ball1.vy;
+    ball1.vx = ball2.vx * e;
+    ball1.vy = ball2.vy * e;
+    ball2.vx = tempVx * e;
+    ball2.vy = tempVy * e;
+  }
+}
 
+function simulateBalls(ball1, ball2) {
   const deltaT = 0.01;
   const realTimePerFrame = deltaT * 1000;
 
   while (true) {
-    let t = calculateFallTime(verticalPosition, verticalVelocity);
+    // Apply air resistance and move balls
+    ball1.applyAirResistance(mew, deltaT);
+    ball2.applyAirResistance(mew, deltaT);
+    ball1.move(deltaT);
+    ball2.move(deltaT);
 
-    for (time : stepArray(0, t, deltaT)) {
-      verticalVelocity = applyAirResistance(verticalVelocity, mew, deltaT);
-      horizontalVelocity = applyAirResistance(horizontalVelocity, mew, deltaT);
+    // Check for collisions with borders
+    ball1.checkCollisionWithBorders();
+    ball2.checkCollisionWithBorders();
 
-      verticalPosition = verticalPosition + verticalVelocity * deltaT;
-      horizontalPosition = horizontalPosition + horizontalVelocity * deltaT;
-      verticalVelocity = verticalVelocity - g * deltaT;
+    // Check for collision between balls
+    checkBallCollision(ball1, ball2);
 
-      let velocities = checkCollisionWithBorders(horizontalPosition, verticalPosition, horizontalVelocity, verticalVelocity);
-      horizontalVelocity = velocities[0];
-      verticalVelocity = velocities[1];
+    // Draw both balls
+    window1.setDrawColor(255, 255, 255, 255);
+    window1.clear();
+    ball1.draw();
+    ball2.draw();
+    window1.present();
 
-      drawBallOnPosition(horizontalPosition, verticalPosition);
-
-      let e;
-      let quit = false;
-      while ((e = window1.pollEvent()) != nil && !quit) {
-        switch (e.type) {
-          case graphics::EventType::QUIT: {
-            quit = true;
-            sys::exit(70);
-          }
+    // Handle quit event
+    let e;
+    let quit = false;
+    while ((e = window1.pollEvent()) != nil && !quit) {
+      switch (e.type) {
+        case graphics::EventType::QUIT: {
+          quit = true;
+          sys::exit(70);
         }
       }
-
-      chrono::sleep(int(realTimePerFrame));
     }
+
+    chrono::sleep(int(realTimePerFrame));
   }
 }
 
 window1.show();
 
-simulateFallAndBounceWithAirResistance(Y_0, Y_DOT_0, X_DOT_0);
+const X1_0 = 10;
+const Y1_0 = 12;
+const X1_DOT_0 = -10;
+const Y1_DOT_0 = 8;
+
+const X2_0 = -10;
+const Y2_0 = 10;
+const X2_DOT_0 = 15;
+const Y2_DOT_0 = 10;
+
+let ball1 = Ball(X1_0, Y1_0, X1_DOT_0, Y1_DOT_0, r);
+let ball2 = Ball(X2_0, Y2_0, X2_DOT_0, Y2_DOT_0, r);
+
+simulateBalls(ball1, ball2);
 
 function handleEvents() {
   let quit = false;
