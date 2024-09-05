@@ -1,0 +1,167 @@
+using luminique::std::math as mt;
+using luminique::std::graphics;
+using luminique::std::chrono;
+using luminique::std::sys;
+
+const scale = 40;
+const k = 50;
+const l = 5;
+const mew = 0.1;
+const m = 2.0;
+
+let window1 = graphics::Window("Spring Animation", 1200, 800, true);
+
+class Cube {
+  function __init__(window, x, y, size) {
+    this.window = window;
+    this.x = x;
+    this.y = y;
+    this.size = size;
+    this.vx = 0; // initial velocity
+    this.ax = 0; // initial acceleration
+  }
+
+  function updatePosition(deltaT) {
+    this.vx = this.vx + this.ax * deltaT;
+    this.x = this.x + this.vx * deltaT;
+  }
+
+  function applyForce(force) {
+    // F = ma => a = F/m
+    this.ax = force / m;
+  }
+
+  function draw() {
+    this.window.setDrawColor(158, 41, 72, 255);
+    this.window.fillPolygon([
+      [int(this.x * scale), int(this.window.height / 2 - this.y * scale + this.size * scale / 2 )],
+      [int(this.x * scale), int(this.window.height / 2 - this.y * scale - this.size * scale / 2)],
+      [int(this.x * scale + this.size * (scale)), int(this.window.height / 2 - this.y * scale - this.size * scale / 2)],
+      [int(this.x * scale + this.size * (scale)), int(this.window.height / 2 - this.y * scale + this.size * scale / 2)]
+    ]);
+  }
+}
+
+class Spring {
+  function __init__(window, cube, anchorX, anchorY) {
+    this.window = window;
+    this.cube = cube;
+    this.anchorX = anchorX;
+    this.anchorY = anchorY;
+    this.numSegments = 8;
+    this.straightSegmentLength = 0.2;
+  }
+
+  function calculateSpringForce() {
+    let displacement = this.cube.x - this.anchorX - l;
+    return -k * displacement; // Hooke's law
+  }
+
+  function draw() {
+    this.window.setDrawColor(0, 0, 0, 255);
+
+    let startX = this.anchorX * scale;
+    let startY = this.anchorY * scale + this.window.height / 2;
+    let endX = this.cube.x * scale;
+    let endY = this.cube.y * scale + this.window.height / 2;
+
+    let totalLengthX = endX - startX;
+    let totalLengthY = endY - startY;
+
+    let straightX = totalLengthX * this.straightSegmentLength;
+    let straightY = totalLengthY * this.straightSegmentLength;
+
+    let startZigX = startX + straightX;
+    let startZigY = startY + straightY;
+
+    let endZigX = endX - straightX;
+    let endZigY = endY - straightY;
+
+    this.window.drawLine(int(startX), int(startY), int(startZigX), int(startZigY));
+
+    let deltaX = (endZigX - startZigX) / this.numSegments;
+    let deltaY = (endZigY - startZigY) / this.numSegments;
+
+    let points = [[startZigX, startZigY]];
+
+    for (let i = 1; i <= this.numSegments; i++) {
+      let x = startZigX + deltaX * i;
+      let y = startZigY + deltaY * i + (i % 2 == 0 ? -15 : 15); // Zigzag y-offset
+
+      points.append([int(x), int(y)]);
+    }
+
+    points.append([endZigX + deltaX, endZigY + deltaY]);
+
+    for (let i = 0; i < points.length - 1; i++) {
+      this.window.drawLine(int(points[i][0]), int(points[i][1]), int(points[i + 1][0]), int(points[i + 1][1]));
+    }
+
+    this.window.drawLine(int(endZigX + deltaX), int(endZigY), int(endX), int(endY));
+  }
+}
+
+function simulateSpringMotion(window, cube, spring) {
+  const deltaT = 0.01;
+  const realTimePerFrame = deltaT * 1000;
+
+  while (true) {
+    let springForce = spring.calculateSpringForce();
+
+    let dampingForce = -mew * cube.vx;
+
+    let totalForce = springForce + dampingForce;
+
+    cube.applyForce(totalForce);
+
+    cube.updatePosition(deltaT);
+
+    window.setDrawColor(255, 255, 255, 255);
+    window.clear();
+
+    spring.draw();
+    cube.draw();
+
+    window.present();
+
+    let e;
+    let quit = false;
+    while ((e = window.pollEvent()) != nil && !quit) {
+      switch (e.type) {
+        case graphics::EventType::QUIT: {
+          quit = true;
+          sys::exit(70);
+        }
+      }
+    }
+
+    chrono::sleep(int(realTimePerFrame));
+  }
+}
+
+window1.show();
+
+let cube = Cube(window1, 2, 0, 2);
+let spring = Spring(window1, cube, 0, 0);
+
+simulateSpringMotion(window1, cube, spring);
+
+function handleEvents() {
+  let quit = false;
+  while (!quit) {
+    let e;
+    while ((e = window1.pollEvent()) != nil && !quit) {
+      switch (e.type) {
+        case graphics::EventType::QUIT: {
+          quit = true;
+          sys::exit(70);
+        }
+      }
+    }
+  }
+}
+
+handleEvents();
+
+window1.hide();
+window1.close();
