@@ -1,6 +1,7 @@
 using luminique::std::math as mt;
 using luminique::std::graphics;
 using luminique::std::chrono;
+using luminique::std::sonus;
 using luminique::std::sys;
 
 const scale = 40;
@@ -11,6 +12,8 @@ const l2 = 2; // Length of each cube
 
 let window1 = graphics::Window("Kinematics", 1200, 800, false);
 window1.loadFont("Ubuntu-Regular.ttf", 32);
+
+let sound = sonus::Sound("audio.mp3");
 
 class Cube {
   function __init__(window, x, y, vx, size, mass) {
@@ -42,6 +45,7 @@ class Cube {
 
     if (this.x - this.size / 2 <= leftBorder /* || this.x + this.size / 2 >= rightBorder */) {
       collisions++;
+      sound.playSound();
       this.vx = -this.vx;
     }
   }
@@ -56,6 +60,7 @@ class Cube {
   function checkCollisionWithCube(other) {
     if (mt::fabs(this.x - other.x) < (this.size + other.size) / 2) {
       collisions++;
+      sound.playSound();
       let newVx1 = ((this.mass - other.mass) * this.vx + 2 * other.mass * other.vx) / (this.mass + other.mass);
       let newVx2 = ((other.mass - this.mass) * other.vx + 2 * this.mass * this.vx) / (this.mass + other.mass);
 
@@ -127,7 +132,7 @@ function simulateCubeMotion(window, cube1, cube2) {
 window1.show();
 
 let cube1 = Cube.addCubeOnFloor(window1, -8, 0, l1, 1); // Mass 1
-let cube2 = Cube.addCubeOnFloor(window1, 0, -0.1, l2, 100**5); // Mass 100
+let cube2 = Cube.addCubeOnFloor(window1, 0, -0.1, l2, 100**1); // Mass 100
 
 simulateCubeMotion(window1, cube1, cube2);
 
