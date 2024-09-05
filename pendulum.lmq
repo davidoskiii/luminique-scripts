@@ -12,92 +12,73 @@ const THETA_DOT_0 = 0;
 
 let window1 = graphics::Window("Pendulum Animation", 800, 600, true);
 
-function stepArray(start, end, step) {
-  let arr = [];
-
-  for (let i = start; i < end + step; i = i + step) {
-    arr.append(i);
+class Pendulum {
+  function __init__(window) {
+    this.window = window;
+    this.theta = THETA_0;
+    this.thetaDot = THETA_DOT_0;
+    this.deltaT = 0.01;
+    this.realTimePerFrame = this.deltaT * 1000;
+    this.threshold = 0.01;
+    this.originX = window.width / 2;
+    this.originY = window.height / 2 - 200;
+    this.bobRadius = 20;
   }
 
-  return arr;
-}
-
-function getThetaDoubleDot(theta, thetaDot) {
-  return -mu * thetaDot - (g / L) * mt::sin(theta);
-}
-
-function thetaAndThetaDot(t) {
-  let theta = THETA_0;
-  let thetaDot = THETA_DOT_0;
-
-  const deltaT = 0.01;
-  for (time : stepArray(0, t, deltaT)) {
-    let thetaDoubleDot = getThetaDoubleDot(theta, thetaDot);
-    theta = theta + thetaDot * deltaT;
-    thetaDot = thetaDot + thetaDoubleDot * deltaT;
+  function getThetaDoubleDot() {
+    return -mu * this.thetaDot - (g / L) * mt::sin(this.theta);
   }
 
-  return [theta, thetaDot];
-}
+  function update() {
+    let thetaDoubleDot = this.getThetaDoubleDot();
+    this.theta = this.theta + this.thetaDot * this.deltaT;
+    this.thetaDot = this.thetaDot + thetaDoubleDot * this.deltaT;
+  }
 
-function drawPendulum(theta) {
-  window1.setDrawColor(255, 255, 255, 255);
-  window1.clear();
+  function draw() {
+    this.window.setDrawColor(255, 255, 255, 255);
+    this.window.clear();
 
-  let originX = window1.width / 2;
-  let originY = window1.height / 2 - 200;
-  let bobRadius = 20;
+    let bobX = this.originX + L * 200 * mt::sin(this.theta);
+    let bobY = this.originY + L * 200 * mt::cos(this.theta);
 
-  let bobX = originX + L * 200 * mt::sin(theta);
-  let bobY = originY + L * 200 * mt::cos(theta);
+    this.window.setDrawColor(0, 0, 0, 255);
+    this.window.drawLine(int(this.originX), int(this.originY), int(bobX), int(bobY));
 
-  window1.setDrawColor(0, 0, 0, 255);
-  window1.drawLine(int(originX), int(originY), int(bobX), int(bobY));
+    this.window.setDrawColor(0, 255, 0, 255);
+    this.window.fillCircle(int(this.originX), int(this.originY), 2);
 
-  window1.setDrawColor(0, 255, 0, 255);
-  window1.fillCircle(int(originX), int(originY), 2);
+    this.window.setDrawColor(255, 0, 0, 255);
+    this.window.fillCircle(int(bobX), int(bobY), this.bobRadius);
 
-  window1.setDrawColor(255, 0, 0, 255);
-  window1.fillCircle(int(bobX), int(bobY), bobRadius);
+    this.window.present();
+  }
 
-  window1.present();
-}
+  function simulateMotion() {
+    while (mt::fabs(this.theta) > this.threshold || mt::fabs(this.thetaDot) > this.threshold) {
+      this.update();
+      this.draw();
 
-function simulatePendulumMotion() {
-  let res = thetaAndThetaDot(0);
-  let theta = res[0];
-  let thetaDot = res[1];
-
-  const deltaT = 0.01;
-  const realTimePerFrame = deltaT * 1000;
-
-  let threshold = 0.01;
-
-  while (mt::fabs(theta) > threshold || mt::fabs(thetaDot) > threshold) {
-    let thetaDoubleDot = getThetaDoubleDot(theta, thetaDot);
-    theta = theta + thetaDot * deltaT;
-    thetaDot = thetaDot + thetaDoubleDot * deltaT;
-
-    drawPendulum(theta);
-
-    let e;
-    let quit = false;
-    while ((e = window1.pollEvent()) != nil && !quit) {
-      switch (e.type) {
-        case graphics::EventType::QUIT: {
-          quit = true;
-          sys::exit(70);
+      let e;
+      let quit = false;
+      while ((e = this.window.pollEvent()) != nil && !quit) {
+        switch (e.type) {
+          case graphics::EventType::QUIT: {
+            quit = true;
+            sys::exit(70);
+          }
         }
       }
-    }
 
-    chrono::sleep(int(realTimePerFrame));
+      chrono::sleep(int(this.realTimePerFrame));
+    }
   }
 }
 
 window1.show();
 
-simulatePendulumMotion();
+let pendulum = Pendulum(window1);
+pendulum.simulateMotion();
 
 function handleEvents() {
   let quit = false;
