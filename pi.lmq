@@ -1,7 +1,7 @@
 using luminique::std::math as mt;
 using luminique::std::graphics;
 using luminique::std::chrono;
-using luminique::std::sonus;
+using luminique::std::sonus::Sound;
 using luminique::std::sys;
 
 const scale = 40;
@@ -11,9 +11,8 @@ const l1 = 1.5; // Length of each cube
 const l2 = 2; // Length of each cube
 
 let window1 = graphics::Window("Kinematics", 1200, 800, false);
-window1.loadFont("Ubuntu-Regular.ttf", 32);
-
-let sound = sonus::Sound("audio.mp3");
+let sound = Sound("utils/audio.mp3");
+window1.loadFont("utils/font.ttf", 32);
 
 class Cube {
   function __init__(window, x, y, vx, size, mass) {
