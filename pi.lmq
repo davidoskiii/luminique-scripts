@@ -7,8 +7,8 @@ using luminique::std::sys;
 const scale = 40;
 let collisions = 0;
 
-const l1 = 1.5; // Length of each cube
-const l2 = 2; // Length of each cube
+const l1 = 1.5;
+const l2 = 2;
 
 let window1 = graphics::Window("Kinematics", 1200, 800, false);
 let sound = Sound("utils/audio.mp3");
