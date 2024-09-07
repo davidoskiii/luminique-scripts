@@ -17,8 +17,8 @@ class Cube {
     this.x = x;
     this.y = y;
     this.size = size;
-    this.vx = 0; // initial velocity
-    this.ax = 0; // initial acceleration
+    this.vx = 0;
+    this.ax = 0;
   }
 
   function updatePosition(deltaT) {
