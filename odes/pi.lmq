@@ -94,7 +94,7 @@ function simulateCubeMotion(window, cube1, cube2) {
   const stepsPerFrame = 500; // Number of physics steps to simulate per frame
 
   while (true) {
-    for (let i = 0; i < stepsPerFrame; i = i + 1) {
+    for (let i = 0; i < stepsPerFrame; i++) {
       cube1.updatePosition(deltaT);
       cube2.updatePosition(deltaT);
       cube1.checkCollisionWithBorders();

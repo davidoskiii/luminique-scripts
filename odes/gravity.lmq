@@ -1,0 +1,115 @@
+using luminique::std::math as mt;
+using luminique::std::graphics;
+using luminique::std::chrono;
+using luminique::std::sys;
+
+const G = 0.001;  // Adjusted gravitational constant for simulation
+
+let window1 = graphics::Window("Planet Orbit Simulation", 1200, 800, false);
+
+class Planet {
+  function __init__(x, y, vx, vy, mass, radius) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+    this.mass = mass;  // Mass of the planet
+    this.radius = radius;
+    this.path = [];  // List to store the planet's path
+  }
+
+  function move(deltaT, starX, starY, starMass) {
+    // Calculate distance to star
+    let dx = starX - this.x;
+    let dy = starY - this.y;
+    let dist = mt::sqrt(dx ** 2 + dy ** 2);
+
+    // Calculate gravitational force and acceleration
+    let force = G * starMass / (dist ** 2);
+    let ax = force * (dx / dist);  // Acceleration in the x-direction
+    let ay = force * (dy / dist);  // Acceleration in the y-direction
+
+    // Update velocities (considering planet's mass)
+    this.vx += ax * deltaT;
+    this.vy += ay * deltaT;
+
+    // Update position
+    this.x += this.vx * deltaT;
+    this.y += this.vy * deltaT;
+
+    // Add current position to the path
+    this.path.append([this.x, this.y]);
+  }
+
+  function draw() {
+    // Draw the orbit path
+    for (let i = 1; i < this.path.length(); i++) {
+      let x1 = int(window1.width / 2 + this.path[i-1][0] * 100);
+      let y1 = int(window1.height / 2 - this.path[i-1][1] * 100);
+      let x2 = int(window1.width / 2 + this.path[i][0] * 100);
+      let y2 = int(window1.height / 2 - this.path[i][1] * 100);
+
+      window1.setDrawColor(0, 150, 150, 255);  // Color for the orbit path
+      window1.drawLine(x1, y1, x2, y2);
+    }
+
+    // Draw the planet
+    window1.setDrawColor(0, 200, 0, 255);
+    window1.fillCircle(int(window1.width / 2 + this.x * 100), int(window1.height / 2 - this.y * 100), this.radius);
+  }
+}
+
+function simulatePlanet(planet, starX, starY, starMass) {
+  let i = 0;
+  const deltaT = 0.05;
+  const realTimePerFrame = deltaT * 500;
+
+  while (true) {
+    if (i == 300) {
+      planet.path = [];
+      i = 0;
+    }
+    // Move planet
+    planet.move(deltaT, starX, starY, starMass);
+
+    // Draw star and planet
+    window1.setDrawColor(255, 255, 255, 255);
+    window1.clear();
+    window1.setDrawColor(255, 215, 0, 255);
+    window1.fillCircle(int(window1.width / 2), int(window1.height / 2), 50);  // Draw star
+    planet.draw();
+    window1.present();
+
+    // Handle quit event
+    let e;
+    let quit = false;
+    while ((e = window1.pollEvent()) != nil && !quit) {
+      switch (e.type) {
+        case graphics::EventType::QUIT: {
+          quit = true;
+          sys::exit(70);
+        }
+      }
+    }
+
+    chrono::sleep(int(realTimePerFrame));
+    i++;
+  }
+}
+
+window1.show();
+
+const X0 = 6;  // Initial x position of planet
+const Y0 = 2;  // Initial y position of planet
+const VX0 = -0.7;  // Initial velocity in x direction
+const VY0 = 0.4;  // Initial velocity in y direction
+const planetMass = 1;  // Mass of the planet
+const r = 20;  // Radius of the planet
+
+const starMass = 11000;
+
+let planet = Planet(X0, Y0, VX0, VY0, planetMass, r);
+simulatePlanet(planet, 0, 0, starMass);
+
+window1.hide();
+window1.close();
