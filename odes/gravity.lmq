@@ -65,7 +65,7 @@ function simulatePlanet(planet, starX, starY, starMass) {
   const realTimePerFrame = deltaT * 500;
 
   while (true) {
-    if (i == 300) {
+    if (i == 400) {
       planet.path = [];
       i = 0;
     }
@@ -99,14 +99,14 @@ function simulatePlanet(planet, starX, starY, starMass) {
 
 window1.show();
 
-const X0 = 6;  // Initial x position of planet
-const Y0 = 2;  // Initial y position of planet
-const VX0 = -0.7;  // Initial velocity in x direction
-const VY0 = 0.4;  // Initial velocity in y direction
+const X0 = 5;  // Initial x position of planet
+const Y0 = 0;  // Initial y position of planet
+const VX0 = -1;  // Initial velocity in x direction
+const VY0 = -0.7;  // Initial velocity in y direction
 const planetMass = 1;  // Mass of the planet
 const r = 20;  // Radius of the planet
 
-const starMass = 11000;
+const starMass = 9000;
 
 let planet = Planet(X0, Y0, VX0, VY0, planetMass, r);
 simulatePlanet(planet, 0, 0, starMass);

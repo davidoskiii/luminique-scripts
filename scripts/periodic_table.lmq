@@ -1,0 +1,97 @@
+let elements = {
+  "H": "idrogeno",
+  "He": "elio",
+  "Li": "litio",
+  "Be": "berilio",
+  "B": "boro",
+  "C": "carbonio",
+  "N": "azoto",
+  "O": "ossigeno",
+  "F": "fluoro",
+  "Ne": "neon",
+  "Na": "sodio",
+  "Mg": "magnesio",
+  "Al": "alluminio",
+  "Si": "silicio",
+  "P": "fosforo",
+  "S": "zolfo",
+  "Cl": "cloro",
+  "Ar": "argon",
+  "K": "potassio",
+  "Ca": "calcio",
+  "Ti": "titanio",
+  "V": "vanadio",
+  "Cr": "cromo",
+  "Mn": "manganese",
+  "Fe": "ferro",
+  "Co": "cobalto",
+  "Ni": "nichel",
+  "Cu": "rame",
+  "Zn": "zinco",
+  "Ga": "gallio",
+  "Ge": "germanio",
+  "As": "arsenico",
+  "Se": "selenio",
+  "Kr": "cripton",
+  "Pd": "palladio",
+  "Ag": "argento",
+  "Cd": "cadmio",
+  "Sn": "stagno",
+  "Sb": "antimonio",
+  "Xe": "xenon",
+  "Cs": "cesio",
+  "Ba": "bario",
+  "Pt": "platino",
+  "Au": "oro",
+  "Pb": "piombo",
+  "Bi": "bismuto",
+  "Rn": "radon",
+  "Fr": "francio",
+  "Ra": "radio",
+  "U": "uranio"
+};
+
+function quiz() {
+  let brk = false;
+  let score = 0;
+  let wrong = {};
+
+  let i = 0;
+  for (element, elementKey : elements) {
+    i++;
+
+    let answer;
+    if (i % 2 == 0) {
+      answer = scanln("Qual'è il simbolo dell'elemento chimico: ${element}: ");
+    } else {
+      answer = scanln("Qual'è il nome dell'elemento chimico: ${elementKey}: ");
+    }
+
+    if (i % 2 == 0) {
+      if (answer.lower() == elementKey.lower()) {
+        score++;
+        continue;
+      } else {
+        println("No, il simbolo corretto è ${elementKey}!");
+        wrong.put(element, elementKey);
+      }
+    } else {
+      if (answer.lower() == element.lower()) {
+        score++;
+        continue;
+      } else {
+        println("No, il nome corretto è ${element}!");
+        wrong.put(element, elementKey);
+      }
+    }
+
+    if (brk || answer == "-1") break;
+  }
+
+  println("Hai totalizzato ${score} / ${elements.length}!");
+
+  println("Ecco i tuoi errori:");
+  println(wrong);
+}
+
+quiz();
